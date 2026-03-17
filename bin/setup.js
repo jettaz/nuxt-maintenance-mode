@@ -23,26 +23,26 @@ if (!existsSync(projectPkgPath)) {
 }
 
 const projectPkg = JSON.parse(readFileSync(projectPkgPath, 'utf8'))
-const alreadyInstalled = projectPkg.dependencies?.['nuxt-maintenance-mode'] !== undefined
+const alreadyInstalled = projectPkg.dependencies?.['@jettaz/nuxt-maintenance-mode'] !== undefined
 
 if (!alreadyInstalled) {
   const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
   const relPath = relative(cwd, packageDir)
   projectPkg.dependencies = projectPkg.dependencies ?? {}
-  projectPkg.dependencies['nuxt-maintenance-mode'] = `file:${relPath}`
+  projectPkg.dependencies['@jettaz/nuxt-maintenance-mode'] = `file:${relPath}`
   writeFileSync(projectPkgPath, JSON.stringify(projectPkg, null, 2) + '\n')
-  console.log('Installing nuxt-maintenance-mode...')
+  console.log('Installing @jettaz/nuxt-maintenance-mode...')
   execSync('npm install', { cwd, stdio: 'inherit' })
-  console.log('✓ nuxt-maintenance-mode installed')
+  console.log('✓ @jettaz/nuxt-maintenance-mode installed')
 } else {
-  console.log('✓ nuxt-maintenance-mode already installed')
+  console.log('✓ @jettaz/nuxt-maintenance-mode already installed')
 }
 
 const rl = createInterface({ input: process.stdin, output: process.stdout })
 
 const question = (prompt) => new Promise((resolve) => rl.question(prompt, resolve))
 
-console.log('\nnuxt-maintenance-mode setup\n')
+console.log('\n@jettaz/nuxt-maintenance-mode setup\n')
 
 const randomPin = String(Math.floor(1000 + Math.random() * 9000))
 
@@ -59,8 +59,8 @@ const secret = randomBytes(32).toString('base64url')
 
 let nuxtConfig = readFileSync(nuxtConfigPath, 'utf8')
 
-const moduleEntry = `'nuxt-maintenance-mode'`
-const moduleConfig = `['nuxt-maintenance-mode', {
+const moduleEntry = `'@jettaz/nuxt-maintenance-mode'`
+const moduleConfig = `['@jettaz/nuxt-maintenance-mode', {
     route: '${route}',
     title: '${title}',
     message: '${message}',
@@ -76,7 +76,7 @@ if (!modulesMatch) {
 
 const insertPos = nuxtConfig.indexOf(modulesMatch[0]) + modulesMatch[0].length
 
-const alreadyHas = nuxtConfig.includes("'nuxt-maintenance-mode'") || nuxtConfig.includes('"nuxt-maintenance-mode"')
+const alreadyHas = nuxtConfig.includes("'@jettaz/nuxt-maintenance-mode'") || nuxtConfig.includes('"@jettaz/nuxt-maintenance-mode"')
 
 if (!alreadyHas) {
   nuxtConfig = nuxtConfig.slice(0, insertPos) + '\n    ' + moduleConfig + ',' + nuxtConfig.slice(insertPos)
