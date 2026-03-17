@@ -25,7 +25,7 @@ export default defineNuxtModule<ModuleOptions>({
     compatibility: { nuxt: '>=4.0.0' },
   },
   defaults: {
-    enabled: false,
+    enabled: true,
     pin: '',
     secret: '',
     route: '/maintenance',

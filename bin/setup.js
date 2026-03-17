@@ -120,7 +120,7 @@ const setEnvVar = (content, key, value) => {
 
 envContent = setEnvVar(envContent, 'NUXT_MAINTENANCE_MODE_PIN', pin)
 envContent = setEnvVar(envContent, 'NUXT_MAINTENANCE_MODE_SECRET', secret)
-envContent = setEnvVar(envContent, 'NUXT_PUBLIC_MAINTENANCE_MODE_ENABLED', 'false')
+envContent = setEnvVar(envContent, 'NUXT_PUBLIC_MAINTENANCE_MODE_ENABLED', 'true')
 
 writeFileSync(envPath, envContent)
 
