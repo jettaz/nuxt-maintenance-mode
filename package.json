@@ -22,6 +22,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "maintenance-setup": "./bin/setup.js"
+  },
   "scripts": {
     "build": "nuxt-module-build build",
     "dev": "nuxi dev playground",
