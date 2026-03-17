@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto'
+import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect } from 'h3'
 
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig()

@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto'
+import { defineEventHandler, getRequestHeader, readBody, createError, setCookie } from 'h3'
 
 const attempts = new Map<string, { count: number; resetAt: number }>()
 const MAX_ATTEMPTS = 5

@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { defineNuxtModule, addServerHandler, extendPages, createResolver, hasNuxtModule } from '@nuxt/kit'
 import { defu } from 'defu'
 
@@ -71,7 +73,7 @@ export default defineNuxtModule<ModuleOptions>({
     })
 
     const hasTailwind = hasNuxtModule('@tailwindcss/nuxt') || hasNuxtModule('@nuxtjs/tailwindcss')
-    const pageFile = hasTailwind
+    const defaultPageFile = hasTailwind
       ? resolver.resolve('./runtime/pages/maintenance.tailwind.vue')
       : resolver.resolve('./runtime/pages/maintenance.vue')
 
@@ -82,6 +84,10 @@ export default defineNuxtModule<ModuleOptions>({
         config.content = content
       })
     }
+
+    const routeSegment = options.route.replace(/^\//, '')
+    const userPageFile = join(nuxt.options.rootDir, 'app/pages', `${routeSegment}.vue`)
+    const pageFile = existsSync(userPageFile) ? userPageFile : defaultPageFile
 
     extendPages((pages) => {
       pages.push({

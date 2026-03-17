@@ -2,7 +2,7 @@
 
 import { createInterface } from 'node:readline'
 import { randomBytes } from 'node:crypto'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
@@ -120,8 +120,23 @@ const setEnvVar = (content, key, value) => {
 
 envContent = setEnvVar(envContent, 'NUXT_MAINTENANCE_MODE_PIN', pin)
 envContent = setEnvVar(envContent, 'NUXT_MAINTENANCE_MODE_SECRET', secret)
+envContent = setEnvVar(envContent, 'NUXT_PUBLIC_MAINTENANCE_MODE_ENABLED', 'false')
 
 writeFileSync(envPath, envContent)
+
+// Copy maintenance page to user's app/pages/ if not already present
+const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
+const hasTailwind = nuxtConfig.includes('@tailwindcss/nuxt') || nuxtConfig.includes('@nuxtjs/tailwindcss')
+const templateFile = hasTailwind ? 'maintenance.tailwind.vue' : 'maintenance.vue'
+const srcPage = join(packageDir, 'dist/runtime/pages', templateFile)
+const destDir = join(cwd, 'app/pages')
+const destPage = join(destDir, 'maintenance.vue')
+
+if (!existsSync(destPage) && existsSync(srcPage)) {
+  mkdirSync(destDir, { recursive: true })
+  copyFileSync(srcPage, destPage)
+  console.log('✓ app/pages/maintenance.vue aangemaakt (aanpasbaar)')
+}
 
 console.log('\n✓ nuxt.config.ts updated')
 console.log('✓ .env updated')
