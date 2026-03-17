@@ -126,7 +126,13 @@ writeFileSync(envPath, envContent)
 
 // Copy maintenance page to user's app/pages/ if not already present
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
-const hasTailwind = nuxtConfig.includes('@tailwindcss/nuxt') || nuxtConfig.includes('@nuxtjs/tailwindcss')
+const allDeps = { ...projectPkg.dependencies, ...projectPkg.devDependencies }
+const hasTailwind =
+  nuxtConfig.includes('@tailwindcss/nuxt') ||
+  nuxtConfig.includes('@nuxtjs/tailwindcss') ||
+  nuxtConfig.includes('@tailwindcss/vite') ||
+  '@tailwindcss/vite' in allDeps ||
+  'tailwindcss' in allDeps
 const templateFile = hasTailwind ? 'maintenance.tailwind.vue' : 'maintenance.vue'
 const srcPage = join(packageDir, 'dist/runtime/pages', templateFile)
 const destDir = join(cwd, 'app/pages')

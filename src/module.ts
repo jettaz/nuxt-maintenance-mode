@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { defineNuxtModule, addServerHandler, extendPages, createResolver, hasNuxtModule } from '@nuxt/kit'
 import { defu } from 'defu'
@@ -72,7 +72,15 @@ export default defineNuxtModule<ModuleOptions>({
       handler: resolver.resolve('./runtime/server/api/maintenance/verify.post'),
     })
 
-    const hasTailwind = hasNuxtModule('@tailwindcss/nuxt') || hasNuxtModule('@nuxtjs/tailwindcss')
+    let hasTailwind = hasNuxtModule('@tailwindcss/nuxt') || hasNuxtModule('@nuxtjs/tailwindcss')
+    if (!hasTailwind) {
+      try {
+        const pkgPath = join(nuxt.options.rootDir, 'package.json')
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+        const allDeps = { ...pkg.dependencies, ...pkg.devDependencies }
+        hasTailwind = '@tailwindcss/vite' in allDeps || 'tailwindcss' in allDeps
+      } catch {}
+    }
     const defaultPageFile = hasTailwind
       ? resolver.resolve('./runtime/pages/maintenance.tailwind.vue')
       : resolver.resolve('./runtime/pages/maintenance.vue')
