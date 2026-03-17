@@ -1,29 +1,33 @@
-# nuxt-maintenance-mode
+# @jettaz/nuxt-maintenance-mode
 
-Nuxt module for maintenance mode with PIN verification. Put your site in maintenance mode and let authorized users bypass it with a PIN code.
+[![npm version](https://img.shields.io/npm/v/@jettaz/nuxt-maintenance-mode)](https://www.npmjs.com/package/@jettaz/nuxt-maintenance-mode)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Nuxt module that puts your site in maintenance mode. Visitors see a maintenance page; authorized users bypass it with a PIN code.
 
 ## Features
 
-- Redirects all visitors to a `/maintenance` page when enabled
-- PIN-based bypass with HMAC-SHA256 signed cookie
-- `httpOnly` + `sameSite=strict` cookie (XSS-safe)
+- Redirects all visitors to a maintenance page when enabled
+- PIN-based bypass — correct PIN sets a signed cookie, no login needed on next visit
+- HMAC-SHA256 signed cookie (`httpOnly` + `sameSite=strict`)
 - Rate limiting: max 5 PIN attempts per minute per IP
-- Allowlist specific IP addresses to always pass through
-- Exclude specific routes from maintenance mode
-- Fully customizable text (title, message, button, placeholder, error)
-- Works with environment variables
+- IP allowlist — let specific IPs through without a PIN
+- Exclude routes from maintenance mode (e.g. health checks, webhooks)
+- Customizable text (title, message, button, placeholder, error)
+- Auto-detects Tailwind CSS and uses utility classes when available
+- All options overridable via environment variables
 
 ## Installation
 
 ```bash
-npm install nuxt-maintenance-mode
+npm install @jettaz/nuxt-maintenance-mode
 ```
 
 Add the module to `nuxt.config.ts`:
 
 ```ts
 export default defineNuxtConfig({
-  modules: ['nuxt-maintenance-mode'],
+  modules: ['@jettaz/nuxt-maintenance-mode'],
 
   maintenanceMode: {
     enabled: true,
@@ -32,13 +36,15 @@ export default defineNuxtConfig({
 })
 ```
 
+That's it. All visitors are now redirected to `/maintenance`. Entering the correct PIN sets a cookie that grants access for 7 days.
+
 ## Configuration
 
 | Option | Type | Default | Description |
-|---|---|---|---|
+|--------|------|---------|-------------|
 | `enabled` | `boolean` | `false` | Enable maintenance mode |
 | `pin` | `string` | `''` | PIN code required to bypass |
-| `secret` | `string` | auto-generated | HMAC secret for cookie signing (set in env for persistence across restarts) |
+| `secret` | `string` | auto-generated | HMAC secret for cookie signing — set this in your env to keep cookies valid across restarts |
 | `route` | `string` | `'/maintenance'` | Path of the maintenance page |
 | `title` | `string` | `'Under Maintenance'` | Page heading |
 | `message` | `string` | `'Enter the PIN code to gain access.'` | Subheading text |
@@ -50,17 +56,19 @@ export default defineNuxtConfig({
 
 ## Environment variables
 
-You can override options via environment variables (recommended for production):
+Recommended for production — keeps sensitive values out of your config file:
 
 ```bash
 NUXT_PUBLIC_MAINTENANCE_MODE_ENABLED=true
-NUXT_MAINTENANCE_MODE_PIN=secret-pin
+NUXT_MAINTENANCE_MODE_PIN=your-pin
 NUXT_MAINTENANCE_MODE_SECRET=your-hmac-secret
 ```
 
-Setting a persistent `NUXT_MAINTENANCE_MODE_SECRET` ensures bypass cookies remain valid across server restarts.
+Set a persistent `NUXT_MAINTENANCE_MODE_SECRET` so bypass cookies remain valid when your server restarts. If you omit it, a new secret is generated on every start and existing cookies are invalidated.
 
-## Example: allow office IP, exclude health check
+## Examples
+
+**Allow office IP, exclude health check:**
 
 ```ts
 maintenanceMode: {
@@ -71,18 +79,48 @@ maintenanceMode: {
 },
 ```
 
+**Custom text:**
+
+```ts
+maintenanceMode: {
+  enabled: true,
+  pin: '0000',
+  title: 'We\'ll be right back',
+  message: 'Scheduled maintenance in progress.',
+  buttonText: 'Staff access',
+  placeholder: 'Enter PIN',
+  errorMessage: 'That PIN is incorrect.',
+},
+```
+
+## Tailwind CSS
+
+The module auto-detects Tailwind CSS. No configuration needed.
+
+- **Tailwind v4** (`@tailwindcss/nuxt`): detected automatically, classes are scanned by Tailwind's file scanner
+- **Tailwind v3** (`@nuxtjs/tailwindcss`): detected automatically, the maintenance page is added to Tailwind's content paths
+
+When Tailwind is present the maintenance page uses utility classes (stone palette). When it's not, a self-contained scoped CSS version is used — no external dependencies either way.
+
 ## How it works
 
 ```
-Visitor → Server Middleware → check cookie token
-                           ↓ no / invalid token
-                   Redirect → /maintenance
-                           ↓ user enters PIN
-                   POST /api/_maintenance/verify
-                           ↓ PIN correct
-                   HMAC-SHA256 token → httpOnly cookie
-                           ↓ cookie valid
-                   Access to normal site
+Visitor → Server middleware → valid bypass cookie?
+                                      │
+                   ┌──────────────────┴──────────────────┐
+                   │ yes                                  │ no
+                   ▼                                      ▼
+           Access to site                     Redirect → /maintenance
+                                                         │
+                                              User enters PIN
+                                                         │
+                                     POST /api/_maintenance/verify
+                                                         │
+                                    ┌────────────────────┴──────────────────┐
+                                    │ correct                               │ wrong
+                                    ▼                                       ▼
+                        Set httpOnly cookie (7 days)              Show error (max 5 tries/min)
+                        Redirect → /
 ```
 
 ## License
