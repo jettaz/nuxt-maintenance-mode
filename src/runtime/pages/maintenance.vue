@@ -2,12 +2,17 @@
 definePageMeta({ layout: false })
 
 const config = useRuntimeConfig()
-const mm = config.public.maintenanceMode as Record<string, string>
-const title = mm.title
-const message = mm.message
-const buttonText = mm.buttonText
-const errorMessage = mm.errorMessage
-const placeholder = mm.placeholder
+const mm = config.public.maintenanceMode as Record<string, unknown>
+
+if (!mm.enabled) {
+  await navigateTo('/', { replace: true })
+}
+
+const title = mm.title as string
+const message = mm.message as string
+const buttonText = mm.buttonText as string
+const errorMessage = mm.errorMessage as string
+const placeholder = mm.placeholder as string
 
 const pin = ref('')
 const error = ref(false)

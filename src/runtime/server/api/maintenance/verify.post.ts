@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
   const pin = body?.pin as string | undefined
 
   const mm = config.maintenanceMode as Record<string, unknown>
-  if (!pin || pin !== mm.pin) {
+  if (!pin || String(pin) !== String(mm.pin)) {
     throw createError({ statusCode: 422, message: 'Invalid PIN' })
   }
 

@@ -6,7 +6,12 @@ export default defineEventHandler((event) => {
   const config = useRuntimeConfig()
 
   const mm = config.public.maintenanceMode as Record<string, unknown>
-  if (!mm.enabled) return
+  if (!mm.enabled) {
+    if (url.pathname === route) {
+      return sendRedirect(event, '/', 302)
+    }
+    return
+  }
 
   const url = getRequestURL(event)
   const route = mm.route as string
