@@ -26,7 +26,7 @@ async function submit() {
       method: 'POST',
       body: { pin: pin.value },
     })
-    window.location.href = '/'
+    await navigateTo('/', { replace: true })
   } catch {
     error.value = true
   } finally {
