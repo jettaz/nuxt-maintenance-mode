@@ -35,7 +35,7 @@ npx maintenance-setup
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable maintenance mode |
+| `enabled` | `boolean` | `true` | Enable maintenance mode |
 | `pin` | `string` | `''` | PIN code required to bypass |
 | `secret` | `string` | auto-generated | HMAC secret for cookie signing — set this in your env to keep cookies valid across restarts |
 | `route` | `string` | `'/maintenance'` | Path of the maintenance page |
@@ -113,9 +113,9 @@ Visitor → Server middleware → valid bypass cookie?
                                     │ correct                               │ wrong
                                     ▼                                       ▼
                         Set httpOnly cookie (7 days)              Show error (max 5 tries/min)
-                        Redirect → /
+                        Access to site
 ```
 
 ## License
 
-MIT
+[MIT](LICENSE)
