@@ -23,7 +23,9 @@ if (!existsSync(projectPkgPath)) {
 }
 
 const projectPkg = JSON.parse(readFileSync(projectPkgPath, 'utf8'))
-const alreadyInstalled = projectPkg.dependencies?.['@jettaz/nuxt-maintenance-mode'] !== undefined
+const alreadyInstalled =
+  projectPkg.dependencies?.['@jettaz/nuxt-maintenance-mode'] !== undefined ||
+  projectPkg.devDependencies?.['@jettaz/nuxt-maintenance-mode'] !== undefined
 
 if (!alreadyInstalled) {
   const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -59,13 +61,14 @@ const secret = randomBytes(32).toString('base64url')
 
 let nuxtConfig = readFileSync(nuxtConfigPath, 'utf8')
 
-const moduleEntry = `'@jettaz/nuxt-maintenance-mode'`
+const escape = (str) => str.replace(/'/g, "\\'")
+
 const moduleConfig = `['@jettaz/nuxt-maintenance-mode', {
-    route: '${route}',
-    title: '${title}',
-    message: '${message}',
-    buttonText: '${buttonText}',
-    errorMessage: '${errorMessage}',
+    route: '${escape(route)}',
+    title: '${escape(title)}',
+    message: '${escape(message)}',
+    buttonText: '${escape(buttonText)}',
+    errorMessage: '${escape(errorMessage)}',
   }]`
 
 const modulesMatch = nuxtConfig.match(/modules\s*:\s*\[/)
