@@ -1,0 +1,48 @@
+{
+  "name": "nuxt-maintenance-mode",
+  "version": "1.0.0",
+  "author": {
+    "name": "jettaz",
+    "url": "https://jettaz.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/jettaz/nuxt-maintenance-mode#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jettaz/nuxt-maintenance-mode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jettaz/nuxt-maintenance-mode/issues"
+  },
+  "description": "Nuxt module for maintenance mode with PIN verification",
+  "type": "module",
+  "exports": {
+    ".": "./dist/module.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "dev": "nuxi dev playground",
+    "dev:prepare": "nuxt-module-build build --stub && nuxi prepare playground",
+    "test": "vitest run",
+    "prepare": "npm run build",
+    "release": "npm run build && npm publish"
+  },
+  "dependencies": {
+    "defu": "^6.1.4"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^4.4.2",
+    "@nuxt/module-builder": "^1.0.0",
+    "@nuxt/schema": "^4.4.2",
+    "@nuxt/test-utils": "^3.15.4",
+    "nuxt": "^4.4.2",
+    "vitest": "^3.2.0",
+    "vue-tsc": "^3.2.6"
+  },
+  "peerDependencies": {
+    "nuxt": ">=4.0.0"
+  }
+}
