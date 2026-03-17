@@ -23,20 +23,13 @@ Nuxt module that puts your site in maintenance mode. Visitors see a maintenance 
 npm install @jettaz/nuxt-maintenance-mode
 ```
 
-Add the module to `nuxt.config.ts`:
+The setup wizard starts automatically. It updates `nuxt.config.ts` and creates a `.env` with a PIN and HMAC secret.
 
-```ts
-export default defineNuxtConfig({
-  modules: ['@jettaz/nuxt-maintenance-mode'],
+To run the wizard manually at any time:
 
-  maintenanceMode: {
-    enabled: true,
-    pin: '1234',
-  },
-})
+```bash
+npx maintenance-setup
 ```
-
-That's it. All visitors are now redirected to `/maintenance`. Entering the correct PIN sets a cookie that grants access for 7 days.
 
 ## Configuration
 

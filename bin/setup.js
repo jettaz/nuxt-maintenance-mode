@@ -7,10 +7,19 @@ import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
 
-const cwd = process.cwd()
+const isPostinstall = process.argv.includes('--postinstall')
+
+if (!process.stdout.isTTY || process.env.CI) {
+  if (isPostinstall) process.exit(0)
+  console.error('Error: This setup script requires an interactive terminal.')
+  process.exit(1)
+}
+
+const cwd = (isPostinstall && process.env.INIT_CWD) ? process.env.INIT_CWD : process.cwd()
 const nuxtConfigPath = join(cwd, 'nuxt.config.ts')
 
 if (!existsSync(nuxtConfigPath)) {
+  if (isPostinstall) process.exit(0)
   console.error('Error: nuxt.config.ts not found in current directory.')
   process.exit(1)
 }
@@ -60,6 +69,16 @@ rl.close()
 const secret = randomBytes(32).toString('base64url')
 
 let nuxtConfig = readFileSync(nuxtConfigPath, 'utf8')
+
+const alreadyConfigured =
+  nuxtConfig.includes("'@jettaz/nuxt-maintenance-mode'") ||
+  nuxtConfig.includes('"@jettaz/nuxt-maintenance-mode"')
+
+if (alreadyConfigured) {
+  if (isPostinstall) process.exit(0)
+  console.log('✓ @jettaz/nuxt-maintenance-mode already configured in nuxt.config.ts')
+  process.exit(0)
+}
 
 const escape = (str) => str.replace(/'/g, "\\'")
 
