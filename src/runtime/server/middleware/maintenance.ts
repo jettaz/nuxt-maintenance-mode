@@ -6,17 +6,17 @@ export default defineEventHandler((event) => {
   const config = useRuntimeConfig()
 
   const mm = config.public.maintenanceMode as Record<string, unknown>
+  const url = getRequestURL(event)
+  const route = mm.route as string
+  const excludeRoutes = (mm.excludeRoutes as string[]) || []
+  const allowedIPs = (mm.allowedIPs as string[]) || []
+
   if (!mm.enabled) {
     if (url.pathname === route) {
       return sendRedirect(event, '/', 302)
     }
     return
   }
-
-  const url = getRequestURL(event)
-  const route = mm.route as string
-  const excludeRoutes = (mm.excludeRoutes as string[]) || []
-  const allowedIPs = (mm.allowedIPs as string[]) || []
 
   if (
     url.pathname === route ||

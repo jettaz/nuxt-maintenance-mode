@@ -7,6 +7,7 @@ import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
 
+// ── 1. Environment checks ───────────────────────────────
 const isPostinstall = process.argv.includes('--postinstall')
 
 if (!process.stdout.isTTY || process.env.CI) {
@@ -24,6 +25,7 @@ if (!existsSync(nuxtConfigPath)) {
   process.exit(1)
 }
 
+// ── 2. Prerequisites ────────────────────────────────────
 const projectPkgPath = join(cwd, 'package.json')
 
 if (!existsSync(projectPkgPath)) {
@@ -32,12 +34,13 @@ if (!existsSync(projectPkgPath)) {
 }
 
 const projectPkg = JSON.parse(readFileSync(projectPkgPath, 'utf8'))
+const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const alreadyInstalled =
   projectPkg.dependencies?.['@jettaz/nuxt-maintenance-mode'] !== undefined ||
   projectPkg.devDependencies?.['@jettaz/nuxt-maintenance-mode'] !== undefined
 
+// ── 3. Package installation ─────────────────────────────
 if (!alreadyInstalled) {
-  const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
   const relPath = relative(cwd, packageDir)
   projectPkg.dependencies = projectPkg.dependencies ?? {}
   projectPkg.dependencies['@jettaz/nuxt-maintenance-mode'] = `file:${relPath}`
@@ -49,6 +52,7 @@ if (!alreadyInstalled) {
   console.log('✓ @jettaz/nuxt-maintenance-mode already installed')
 }
 
+// ── 4. Interactive prompts ──────────────────────────────
 const rl = createInterface({ input: process.stdin, output: process.stdout })
 
 const question = (prompt) => new Promise((resolve) => rl.question(prompt, resolve))
@@ -66,8 +70,9 @@ const errorMessage = (await question(`Error message [Incorrect PIN code.]: `)).t
 
 rl.close()
 
-const secret = randomBytes(32).toString('base64url')
+const secret = randomBytes(32).toString('hex')
 
+// ── 5. Update nuxt.config.ts ────────────────────────────
 let nuxtConfig = readFileSync(nuxtConfigPath, 'utf8')
 
 const alreadyConfigured =
@@ -106,6 +111,7 @@ if (!alreadyHas) {
 
 writeFileSync(nuxtConfigPath, nuxtConfig)
 
+// ── 6. Update .env ──────────────────────────────────────
 const envPath = join(cwd, '.env')
 let envContent = existsSync(envPath) ? readFileSync(envPath, 'utf8') : ''
 
@@ -124,8 +130,7 @@ envContent = setEnvVar(envContent, 'NUXT_PUBLIC_MAINTENANCE_MODE_ENABLED', 'true
 
 writeFileSync(envPath, envContent)
 
-// Copy maintenance page to user's app/pages/ if not already present
-const packageDir = dirname(dirname(fileURLToPath(import.meta.url)))
+// ── 7. Copy template page ───────────────────────────────
 const allDeps = { ...projectPkg.dependencies, ...projectPkg.devDependencies }
 const hasTailwind =
   nuxtConfig.includes('@tailwindcss/nuxt') ||
@@ -141,9 +146,10 @@ const destPage = join(destDir, 'maintenance.vue')
 if (!existsSync(destPage) && existsSync(srcPage)) {
   mkdirSync(destDir, { recursive: true })
   copyFileSync(srcPage, destPage)
-  console.log('✓ app/pages/maintenance.vue aangemaakt (aanpasbaar)')
+  console.log('✓ app/pages/maintenance.vue created (customizable)')
 }
 
+// ── 8. Summary ──────────────────────────────────────────
 console.log('\n✓ nuxt.config.ts updated')
 console.log('✓ .env updated')
 console.log('\nSet these variables on your server:\n')
