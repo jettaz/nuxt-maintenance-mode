@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { defineNuxtModule, addServerHandler, extendPages, createResolver, hasNuxtModule } from '@nuxt/kit'
@@ -39,7 +39,7 @@ export default defineNuxtModule<ModuleOptions>({
   },
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
-    const secret = options.secret || randomBytes(32).toString('hex')
+    const secret = options.secret || createHash('sha256').update(`maintenance:${options.pin}`).digest('hex')
 
     nuxt.options.runtimeConfig.maintenanceMode = defu(
       nuxt.options.runtimeConfig.maintenanceMode as Record<string, unknown>,
