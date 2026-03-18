@@ -82,7 +82,6 @@ const alreadyConfigured =
 if (alreadyConfigured) {
   if (isPostinstall) process.exit(0)
   console.log('✓ @jettaz/nuxt-maintenance-mode already configured in nuxt.config.ts')
-  process.exit(0)
 }
 
 const escape = (str) => str.replace(/'/g, "\\'")
