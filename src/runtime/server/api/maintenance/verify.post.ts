@@ -45,6 +45,13 @@ export default defineEventHandler(async (event) => {
     maxAge: 60 * 60 * 24 * 7,
   })
 
+  setCookie(event, 'maintenance_bypass_hint', '1', {
+    httpOnly: false,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
+  })
+
   attempts.delete(ip)
 
   return { ok: true }

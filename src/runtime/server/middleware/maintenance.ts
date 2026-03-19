@@ -19,7 +19,6 @@ export default defineEventHandler((event) => {
   }
 
   if (
-    url.pathname === route ||
     url.pathname.startsWith('/api/_maintenance') ||
     url.pathname.startsWith('/_nuxt') ||
     url.pathname.startsWith('/__nuxt') ||
@@ -39,17 +38,26 @@ export default defineEventHandler((event) => {
 
   const cookies = parseCookies(event)
   const token = cookies.maintenance_bypass
-
   const mmPrivate = config.maintenanceMode as Record<string, unknown>
-  if (!token || !mmPrivate.secret) {
-    return sendRedirect(event, route, 302)
+
+  let isValid = false
+  if (token && mmPrivate.secret) {
+    const expected = createHmac('sha256', mmPrivate.secret as string)
+      .update('maintenance_bypass')
+      .digest('hex')
+    isValid = token === expected
   }
 
-  const expected = createHmac('sha256', mmPrivate.secret as string)
-    .update('maintenance_bypass')
-    .digest('hex')
-
-  if (token !== expected) {
-    return sendRedirect(event, route, 302)
+  if (isValid) {
+    if (url.pathname === route) {
+      return sendRedirect(event, '/', 302)
+    }
+    return
   }
+
+  if (url.pathname === route) {
+    return
+  }
+
+  return sendRedirect(event, route, 302)
 })

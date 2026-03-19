@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto'
-import { parseCookies } from 'h3'
+import { parseCookies, setCookie } from 'h3'
 import { defineNuxtPlugin, useRequestEvent, useRuntimeConfig, useState } from '#imports'
 
 export default defineNuxtPlugin({
@@ -18,6 +18,17 @@ export default defineNuxtPlugin({
     const cookies = parseCookies(event)
     const token = cookies.maintenance_bypass
     const expected = createHmac('sha256', mm.secret).update('maintenance_bypass').digest('hex')
-    useState('maintenance-bypassed', () => token === expected)
+    const isValid = token === expected
+
+    useState('maintenance-bypassed', () => isValid)
+
+    if (isValid && !cookies.maintenance_bypass_hint) {
+      setCookie(event, 'maintenance_bypass_hint', '1', {
+        httpOnly: false,
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+      })
+    }
   },
 })
