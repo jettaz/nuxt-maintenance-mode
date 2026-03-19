@@ -14,6 +14,15 @@ const buttonText = mm.buttonText as string
 const errorMessage = mm.errorMessage as string
 const placeholder = mm.placeholder as string
 
+const bypassed = useState<boolean>('maintenance-bypassed', () => false)
+const bypassHint = useCookie('maintenance_bypass_hint')
+
+onMounted(async () => {
+  if (bypassed.value || !!bypassHint.value) {
+    await navigateTo('/', { replace: true })
+  }
+})
+
 const pin = ref('')
 const error = ref(false)
 const loading = ref(false)

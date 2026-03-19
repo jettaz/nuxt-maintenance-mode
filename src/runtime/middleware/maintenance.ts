@@ -1,4 +1,4 @@
-import { defineNuxtRouteMiddleware, useState, useRuntimeConfig, useCookie, abortNavigation } from '#imports'
+import { defineNuxtRouteMiddleware, useState, useRuntimeConfig, useCookie, abortNavigation, navigateTo } from '#imports'
 
 export default defineNuxtRouteMiddleware((to) => {
   const config = useRuntimeConfig()
@@ -10,6 +10,9 @@ export default defineNuxtRouteMiddleware((to) => {
   const route = mm.route as string
 
   if ((bypassed.value || !!hint.value) && to.path === route) {
-    return abortNavigation()
+    if (from?.path && from.path !== route) {
+      return abortNavigation()
+    }
+    return navigateTo('/', { replace: true })
   }
 })
