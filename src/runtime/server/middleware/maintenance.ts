@@ -18,6 +18,10 @@ export default defineEventHandler((event) => {
     return
   }
 
+  if (getRequestHeader(event, 'x-nitro-prerender')) {
+    return
+  }
+
   if (
     url.pathname.startsWith('/api/_maintenance') ||
     url.pathname.startsWith('/_nuxt') ||
