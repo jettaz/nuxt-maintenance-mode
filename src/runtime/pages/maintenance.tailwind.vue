@@ -26,6 +26,7 @@ async function submit() {
       method: 'POST',
       body: { pin: pin.value },
     })
+    useState<boolean>('maintenance-bypassed').value = true
     await navigateTo('/', { replace: true })
   } catch {
     error.value = true

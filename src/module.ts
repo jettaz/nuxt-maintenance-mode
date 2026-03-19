@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { defineNuxtModule, addServerHandler, extendPages, createResolver, hasNuxtModule } from '@nuxt/kit'
+import { defineNuxtModule, addServerHandler, addPlugin, addRouteMiddleware, addImports, extendPages, createResolver, hasNuxtModule } from '@nuxt/kit'
 import { defu } from 'defu'
 
 export interface ModuleOptions {
@@ -60,6 +60,20 @@ export default defineNuxtModule<ModuleOptions>({
         excludeRoutes: options.excludeRoutes,
       }
     )
+
+    addPlugin(resolver.resolve('./runtime/plugins/maintenance.server'))
+
+    addRouteMiddleware({
+      name: 'maintenance',
+      path: resolver.resolve('./runtime/middleware/maintenance'),
+      global: true,
+    })
+
+    addImports({
+      name: 'useMaintenanceMode',
+      as: 'useMaintenanceMode',
+      from: resolver.resolve('./runtime/composables/useMaintenanceMode'),
+    })
 
     addServerHandler({
       middleware: true,
