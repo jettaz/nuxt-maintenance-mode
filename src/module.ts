@@ -61,7 +61,7 @@ export default defineNuxtModule<ModuleOptions>({
       }
     )
 
-    addPlugin(resolver.resolve('./runtime/plugins/maintenance.server'))
+    addPlugin({ src: resolver.resolve('./runtime/plugins/maintenance.server'), mode: 'server' })
 
     addRouteMiddleware({
       name: 'maintenance',

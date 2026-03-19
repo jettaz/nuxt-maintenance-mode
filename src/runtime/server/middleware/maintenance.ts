@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect } from 'h3'
 import { useRuntimeConfig } from '#imports'
 
@@ -45,13 +45,13 @@ export default defineEventHandler((event) => {
     const expected = createHmac('sha256', mmPrivate.secret as string)
       .update('maintenance_bypass')
       .digest('hex')
-    isValid = token === expected
+    const enc = new TextEncoder()
+    const tokenBuf = enc.encode(token)
+    const expectedBuf = enc.encode(expected)
+    isValid = tokenBuf.length === expectedBuf.length && timingSafeEqual(tokenBuf, expectedBuf)
   }
 
   if (isValid) {
-    if (url.pathname === route) {
-      return sendRedirect(event, '/', 302)
-    }
     return
   }
 

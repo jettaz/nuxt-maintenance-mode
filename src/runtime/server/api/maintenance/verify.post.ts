@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { defineEventHandler, getRequestHeader, readBody, createError, setCookie } from 'h3'
 import { useRuntimeConfig } from '#imports'
 
@@ -15,6 +15,11 @@ export default defineEventHandler(async (event) => {
     'unknown'
 
   const now = Date.now()
+
+  for (const [key, value] of attempts) {
+    if (now >= value.resetAt) attempts.delete(key)
+  }
+
   const entry = attempts.get(ip)
 
   if (entry && now < entry.resetAt) {
@@ -47,7 +52,7 @@ export default defineEventHandler(async (event) => {
 
   setCookie(event, 'maintenance_bypass_hint', '1', {
     httpOnly: false,
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   })
