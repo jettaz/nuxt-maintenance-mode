@@ -13,6 +13,8 @@ Nuxt module that puts your site in maintenance mode. Visitors see a maintenance 
 - Rate limiting: max 5 PIN attempts per minute per IP
 - IP allowlist — let specific IPs through without a PIN
 - Exclude routes from maintenance mode (e.g. health checks, webhooks)
+- Works independently of project auth middlewares — no redirect loops after PIN entry
+- `useMaintenanceMode()` composable available as auto-import
 - Customizable text (title, message, button, placeholder, error)
 - Auto-detects Tailwind CSS and uses utility classes when available
 - All options overridable via environment variables
@@ -95,6 +97,29 @@ The module auto-detects Tailwind CSS. No configuration needed.
 
 When Tailwind is present the maintenance page uses utility classes (stone palette). When it's not, a self-contained scoped CSS version is used — no external dependencies either way.
 
+## `useMaintenanceMode()`
+
+Auto-imported composable for use in your own middlewares or components:
+
+```ts
+const { enabled, bypassed } = useMaintenanceMode()
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `enabled` | `boolean` | Whether maintenance mode is active |
+| `bypassed` | `Ref<boolean>` | Whether the current user has bypassed maintenance |
+
+Example — skip your auth middleware for bypassed users:
+
+```ts
+export default defineNuxtRouteMiddleware(() => {
+  const { bypassed } = useMaintenanceMode()
+  if (bypassed.value) return
+  // ... rest of auth logic
+})
+```
+
 ## How it works
 
 ```
@@ -113,6 +138,8 @@ Visitor → Server middleware → valid bypass cookie?
                                     │ correct                               │ wrong
                                     ▼                                       ▼
                         Set httpOnly cookie (7 days)              Show error (max 5 tries/min)
+                        bypassed state hydrated via SSR
+                        Route middleware blocks redirect loops
                         Access to site
 ```
 

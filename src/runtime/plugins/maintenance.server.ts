@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { parseCookies } from 'h3'
+import { defineNuxtPlugin, useRequestEvent, useRuntimeConfig, useState } from '#imports'
 
 export default defineNuxtPlugin({
   name: 'maintenance-mode-server',
