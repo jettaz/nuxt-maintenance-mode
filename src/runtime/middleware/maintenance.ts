@@ -1,6 +1,8 @@
 import { defineNuxtRouteMiddleware, useState, useRuntimeConfig, useCookie, abortNavigation, navigateTo } from '#imports'
 
 export default defineNuxtRouteMiddleware((to, from) => {
+  if (import.meta.server) return
+
   const config = useRuntimeConfig()
   const mm = config.public.maintenanceMode as Record<string, unknown>
   if (!mm.enabled) return
