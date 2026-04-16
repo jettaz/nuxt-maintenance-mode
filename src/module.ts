@@ -63,6 +63,11 @@ export default defineNuxtModule<ModuleOptions>({
 
     addPlugin({ src: resolver.resolve('./runtime/plugins/maintenance.server'), mode: 'server' })
 
+    nuxt.hook('nitro:config', (nitroConfig) => {
+      nitroConfig.plugins = nitroConfig.plugins || []
+      nitroConfig.plugins.push(resolver.resolve('./runtime/server/plugins/maintenance-html'))
+    })
+
     addRouteMiddleware({
       name: 'maintenance',
       path: resolver.resolve('./runtime/middleware/maintenance'),
