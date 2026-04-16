@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect } from 'h3'
+import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect, setResponseHeader } from 'h3'
 import { useRuntimeConfig } from '#imports'
 
 export default defineEventHandler((event) => {
@@ -53,5 +53,6 @@ export default defineEventHandler((event) => {
 
   if (isValid || url.pathname === route) return
 
+  setResponseHeader(event, 'Cache-Control', 'no-store, no-cache, must-revalidate')
   return sendRedirect(event, route, 302)
 })
