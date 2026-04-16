@@ -58,6 +58,8 @@ async function submit() {
           inputmode="numeric"
           :placeholder="placeholder"
           :maxlength="8"
+          id="pin"
+          name="pin"
           class="maintenance-input"
           autocomplete="off"
         />

@@ -44,24 +44,14 @@ export default defineEventHandler((event) => {
   const token = cookies.maintenance_bypass
   const mmPrivate = config.maintenanceMode as Record<string, unknown>
 
-  let isValid = false
-  if (token && mmPrivate.secret) {
-    const expected = createHmac('sha256', mmPrivate.secret as string)
-      .update('maintenance_bypass')
-      .digest('hex')
-    const enc = new TextEncoder()
-    const tokenBuf = enc.encode(token)
-    const expectedBuf = enc.encode(expected)
-    isValid = tokenBuf.length === expectedBuf.length && timingSafeEqual(tokenBuf, expectedBuf)
-  }
+  const isValid = !!(token && mmPrivate.secret && (() => {
+    const encoder = new TextEncoder()
+    const tokenBytes = encoder.encode(token)
+    const expectedBytes = encoder.encode(createHmac('sha256', mmPrivate.secret as string).update('maintenance_bypass').digest('hex'))
+    return tokenBytes.length === expectedBytes.length && timingSafeEqual(tokenBytes, expectedBytes)
+  })())
 
-  if (isValid) {
-    return
-  }
-
-  if (url.pathname === route) {
-    return
-  }
+  if (isValid || url.pathname === route) return
 
   return sendRedirect(event, route, 302)
 })

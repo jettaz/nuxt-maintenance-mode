@@ -18,10 +18,10 @@ export default defineNuxtPlugin({
     const cookies = parseCookies(event)
     const token = cookies.maintenance_bypass
     const expected = createHmac('sha256', mm.secret).update('maintenance_bypass').digest('hex')
-    const enc = new TextEncoder()
-    const tokenBuf = enc.encode(token ?? '')
-    const expectedBuf = enc.encode(expected)
-    const isValid = !!token && tokenBuf.length === expectedBuf.length && timingSafeEqual(tokenBuf, expectedBuf)
+    const encoder = new TextEncoder()
+    const tokenBytes = encoder.encode(token ?? '')
+    const expectedBytes = encoder.encode(expected)
+    const isValid = !!token && tokenBytes.length === expectedBytes.length && timingSafeEqual(tokenBytes, expectedBytes)
 
     useState('maintenance-bypassed', () => isValid)
 
