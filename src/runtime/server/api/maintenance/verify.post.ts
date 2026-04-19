@@ -35,11 +35,17 @@ export default defineEventHandler(async (event) => {
   const pin = body?.pin as string | undefined
 
   const mm = config.maintenanceMode as Record<string, unknown>
-  if (!pin || String(pin) !== String(mm.pin)) {
+  const secret = mm.secret as string
+
+  const submittedHash = createHmac('sha256', secret).update(String(pin ?? '')).digest()
+  const expectedHash = createHmac('sha256', secret).update(String(mm.pin ?? '')).digest()
+  const pinValid = !!pin && timingSafeEqual(submittedHash, expectedHash)
+
+  if (!pinValid) {
     throw createError({ statusCode: 422, message: 'Invalid PIN' })
   }
 
-  const token = createHmac('sha256', mm.secret as string)
+  const token = createHmac('sha256', secret)
     .update('maintenance_bypass')
     .digest('hex')
 

@@ -15,10 +15,24 @@
     "url": "https://github.com/jettaz/nuxt-maintenance-mode/issues"
   },
   "description": "Nuxt module for maintenance mode with PIN verification",
+  "keywords": [
+    "nuxt",
+    "nuxt-module",
+    "nuxt4",
+    "maintenance",
+    "maintenance-mode",
+    "pin",
+    "bypass"
+  ],
   "type": "module",
   "exports": {
-    ".": "./dist/module.mjs"
+    ".": {
+      "types": "./dist/module.d.mts",
+      "import": "./dist/module.mjs"
+    }
   },
+  "main": "./dist/module.mjs",
+  "types": "./dist/module.d.mts",
   "files": [
     "dist",
     "bin"
