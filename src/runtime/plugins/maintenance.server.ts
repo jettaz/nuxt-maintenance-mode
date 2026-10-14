@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { parseCookies, setCookie } from 'h3'
+import { deleteCookie, parseCookies, setCookie } from 'h3'
 import { defineNuxtPlugin, useRequestEvent, useRuntimeConfig, useState } from '#imports'
 
 export default defineNuxtPlugin({
@@ -31,6 +31,13 @@ export default defineNuxtPlugin({
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
+      })
+      return
+    }
+
+    if (!isValid && cookies.maintenance_bypass_hint) {
+      deleteCookie(event, 'maintenance_bypass_hint', {
+        path: '/',
       })
     }
   },

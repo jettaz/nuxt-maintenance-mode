@@ -1,6 +1,15 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect, setResponseHeader } from 'h3'
+import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect, setResponseHeader, setResponseStatus } from 'h3'
 import { useRuntimeConfig } from '#imports'
+
+const DEFAULT_PUBLIC_EXCLUDED_PREFIXES = [
+  '/_i18n',
+  '/_ipx',
+  '/__sitemap__',
+  '/robots.txt',
+  '/manifest.json',
+  '/favicon.ico',
+]
 
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig()
@@ -26,6 +35,7 @@ export default defineEventHandler((event) => {
     url.pathname.startsWith('/api/_maintenance') ||
     url.pathname.startsWith('/_nuxt') ||
     url.pathname.startsWith('/__nuxt') ||
+    DEFAULT_PUBLIC_EXCLUDED_PREFIXES.some((r) => url.pathname === r || url.pathname.startsWith(r)) ||
     excludeRoutes.some((r) => url.pathname === r || url.pathname.startsWith(r))
   ) {
     return
@@ -53,6 +63,19 @@ export default defineEventHandler((event) => {
 
   if (isValid || url.pathname === route) return
 
+  const secFetchMode = getRequestHeader(event, 'sec-fetch-mode')
+  const accept = getRequestHeader(event, 'accept') || ''
+  const isNavigationRequest = secFetchMode === 'navigate' || accept.includes('text/html')
+
   setResponseHeader(event, 'Cache-Control', 'no-store, no-cache, must-revalidate')
-  return sendRedirect(event, route, 302)
+  if (isNavigationRequest) {
+    return sendRedirect(event, route, 302)
+  }
+
+  setResponseHeader(event, 'Retry-After', '60')
+  setResponseStatus(event, 503)
+  return {
+    statusCode: 503,
+    statusMessage: 'Maintenance mode active',
+  }
 })

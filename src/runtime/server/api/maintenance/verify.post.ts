@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
 
   setCookie(event, 'maintenance_bypass', token, {
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   })

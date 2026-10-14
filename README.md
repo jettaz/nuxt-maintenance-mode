@@ -9,10 +9,12 @@ Nuxt module that puts your site in maintenance mode. Visitors see a maintenance 
 
 - Redirects all visitors to a maintenance page when enabled
 - PIN-based bypass — correct PIN sets a signed cookie, no login needed on next visit
-- HMAC-SHA256 signed cookie (`httpOnly` + `sameSite=strict`)
+- HMAC-SHA256 signed cookies (`maintenance_bypass` and `maintenance_bypass_hint`, both `sameSite=lax`)
 - Rate limiting: max 5 PIN attempts per minute per IP
 - IP allowlist — let specific IPs through without a PIN
 - Exclude routes from maintenance mode (e.g. health checks, webhooks)
+- Non-page requests (JSON/fetch/assets) get a `503` JSON response instead of an HTML redirect
+- Built-in public route exclusions for i18n/image/sitemap/manifest/favicon endpoints
 - Works independently of project auth middlewares — no redirect loops after PIN entry
 - `useMaintenanceMode()` composable available as auto-import
 - Customizable text (title, message, button, placeholder, error)
@@ -49,6 +51,26 @@ npx maintenance-setup
 | `allowedIPs` | `string[]` | `[]` | IPs that always bypass maintenance mode |
 | `excludeRoutes` | `string[]` | `[]` | Routes that are never redirected |
 
+### Bypass cookies
+
+After a correct PIN, the module sets:
+
+- `maintenance_bypass`: signed access cookie (`httpOnly`, `sameSite=lax`, 7 days)
+- `maintenance_bypass_hint`: client hint cookie (`sameSite=lax`, 7 days)
+
+If a stale hint exists without a valid bypass cookie, the hint cookie is automatically cleared on the next server render.
+
+### Built-in public exclusions
+
+These routes are always excluded from maintenance redirects before your custom `excludeRoutes`:
+
+- `/_i18n`
+- `/_ipx`
+- `/__sitemap__`
+- `/robots.txt`
+- `/manifest.json`
+- `/favicon.ico`
+
 ## Environment variables
 
 Recommended for production — keeps sensitive values out of your config file:
@@ -60,6 +82,12 @@ NUXT_MAINTENANCE_MODE_SECRET=your-hmac-secret
 ```
 
 Set a persistent `NUXT_MAINTENANCE_MODE_SECRET` so bypass cookies remain valid when your server restarts. If you omit it, a new secret is generated on every start and existing cookies are invalidated.
+
+## Custom maintenance page requirement
+
+After a successful PIN check, the page should force a full reload (for example `window.location.replace('/')`) instead of only doing client-side navigation. This ensures translations, payloads, auth/session fetches, and other startup requests are retried with the new bypass cookie.
+
+If you provide your own `app/pages/maintenance.vue`, apply the same behavior there.
 
 ## Examples
 
