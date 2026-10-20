@@ -7,5 +7,6 @@ export default defineNuxtConfig({
     pin: '1234',
     title: 'Under Maintenance',
     message: 'Enter the PIN code to gain access.',
+    allowedIPs: ['203.0.113.42'],
   },
 })

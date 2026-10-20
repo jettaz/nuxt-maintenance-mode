@@ -11,12 +11,13 @@ Nuxt module that puts your site in maintenance mode. Visitors see a maintenance 
 - PIN-based bypass — correct PIN sets a signed cookie, no login needed on next visit
 - HMAC-SHA256 signed cookies (`maintenance_bypass` and `maintenance_bypass_hint`, both `sameSite=lax`)
 - Rate limiting: max 5 PIN attempts per minute per IP
-- IP allowlist — let specific IPs through without a PIN
+- IP allowlist — let specific IPs through without a PIN (proxy headers only when you opt in)
 - Exclude routes from maintenance mode (e.g. health checks, webhooks)
 - Non-page requests (JSON/fetch/assets) get a `503` JSON response instead of an HTML redirect
 - Built-in public route exclusions for i18n/image/sitemap/manifest/favicon endpoints
 - Works independently of project auth middlewares — no redirect loops after PIN entry
-- `useMaintenanceMode()` composable available as auto-import
+- `useMaintenanceMode()` composable with `verifyPin()` and `unlock()` for your own page
+- Typed module options and runtime config
 - Customizable text (title, message, button, placeholder, error)
 - Auto-detects Tailwind CSS and uses utility classes when available
 - All options overridable via environment variables
@@ -47,9 +48,27 @@ npx maintenance-setup
 | `message` | `string` | `'Enter the PIN code to gain access.'` | Subheading text |
 | `buttonText` | `string` | `'Access'` | Submit button label |
 | `errorMessage` | `string` | `'Incorrect PIN code.'` | Error shown on wrong PIN |
+| `tooManyAttemptsMessage` | `string` | `'Too many attempts. Try again in a minute.'` | Error shown when rate limited (429) |
 | `placeholder` | `string` | `'PIN code'` | Input placeholder |
 | `allowedIPs` | `string[]` | `[]` | IPs that always bypass maintenance mode |
 | `excludeRoutes` | `string[]` | `[]` | Routes that are never redirected |
+| `trustProxy` | `boolean` | `false` | Read the client IP from `X-Forwarded-For` |
+| `ipHeader` | `string` | `''` | Read the client IP from this header, e.g. `'cf-connecting-ip'` (Cloudflare) or `'x-nf-client-connection-ip'` (Netlify) |
+
+### Client IP behind a proxy
+
+The client IP is used for `allowedIPs` and for the PIN rate limit. By default the module only uses the socket address, because any visitor can send an `X-Forwarded-For` header.
+
+Behind a proxy or CDN the socket address is the proxy's, so:
+
+- `allowedIPs` will not match anyone, and
+- the rate limit counts all visitors together (stricter, not less safe).
+
+Set `ipHeader` to the header your host sets and visitors cannot forge, or `trustProxy: true` when your proxy overwrites `X-Forwarded-For`. Don't enable either without a proxy in front of the app.
+
+### Rate limit
+
+Max 5 wrong PINs per minute per IP. The counter lives in memory per server instance, so on serverless hosts (Netlify Functions, Vercel, Lambda) every instance counts separately. Use a PIN of at least 6 characters; the setup wizard enforces this.
 
 ### Bypass cookies
 
@@ -83,11 +102,41 @@ NUXT_MAINTENANCE_MODE_SECRET=your-hmac-secret
 
 Set a persistent `NUXT_MAINTENANCE_MODE_SECRET` so bypass cookies remain valid when your server restarts. If you omit it, a new secret is generated on every start and existing cookies are invalidated.
 
-## Custom maintenance page requirement
+## Custom maintenance page
 
-After a successful PIN check, the page should force a full reload (for example `window.location.replace('/')`) instead of only doing client-side navigation. This ensures translations, payloads, auth/session fetches, and other startup requests are retried with the new bypass cookie.
+Create `app/pages/maintenance.vue` (or the file matching your `route`) and it replaces the built-in page. Use `verifyPin()` and `unlock()` so you don't need to know the API route:
 
-If you provide your own `app/pages/maintenance.vue`, apply the same behavior there.
+```vue
+<script setup lang="ts">
+definePageMeta({ layout: false })
+
+const { verifyPin, unlock } = useMaintenanceMode()
+const { title, errorMessage, tooManyAttemptsMessage } = useRuntimeConfig().public.maintenanceMode
+const pin = ref('')
+const error = ref('')
+
+async function submit() {
+  error.value = ''
+  try {
+    if (await verifyPin(pin.value)) return unlock()
+    error.value = errorMessage
+  } catch (e) {
+    error.value = (e as { statusCode?: number }).statusCode === 429 ? tooManyAttemptsMessage : errorMessage
+  }
+}
+</script>
+
+<template>
+  <form @submit.prevent="submit">
+    <h1>{{ title }}</h1>
+    <input v-model="pin" type="password" autocomplete="off">
+    <p v-if="error">{{ error }}</p>
+    <button>Access</button>
+  </form>
+</template>
+```
+
+`unlock()` forces a full reload instead of client-side navigation, so translations, payloads, auth/session fetches and other startup requests are retried with the new bypass cookie.
 
 ## Examples
 
@@ -130,13 +179,15 @@ When Tailwind is present the maintenance page uses utility classes (stone palett
 Auto-imported composable for use in your own middlewares or components:
 
 ```ts
-const { enabled, bypassed } = useMaintenanceMode()
+const { enabled, bypassed, verifyPin, unlock } = useMaintenanceMode()
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `enabled` | `boolean` | Whether maintenance mode is active |
-| `bypassed` | `Ref<boolean>` | Whether the current user has bypassed maintenance |
+| `bypassed` | `Ref<boolean>` | Whether the current user has bypassed maintenance (valid cookie or allowed IP) |
+| `verifyPin` | `(pin: string) => Promise<boolean>` | `true` for a correct PIN, `false` for a wrong one; throws on `429` and other errors |
+| `unlock` | `() => void` | Marks the session as bypassed and reloads to `/` |
 
 Example — skip your auth middleware for bypassed users:
 

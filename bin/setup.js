@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createInterface } from 'node:readline'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomInt } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -59,9 +59,15 @@ const question = (prompt) => new Promise((resolve) => rl.question(prompt, resolv
 
 console.log('\n@jettaz/nuxt-maintenance-mode setup\n')
 
-const randomPin = String(Math.floor(1000 + Math.random() * 9000))
+const randomPin = String(randomInt(100000, 1000000))
 
-const pin = (await question(`Pincode [${randomPin}]: `)).trim() || randomPin
+// The rate limit is per server instance, so short PINs are guessable on serverless hosts.
+let pin
+while (true) {
+  pin = (await question(`Pincode, min. 6 characters [${randomPin}]: `)).trim() || randomPin
+  if (pin.length >= 6) break
+  console.log('PIN must be at least 6 characters.')
+}
 const route = (await question(`Route [/maintenance]: `)).trim() || '/maintenance'
 const title = (await question(`Page title [Under Maintenance]: `)).trim() || 'Under Maintenance'
 const message = (await question(`Message [Enter the PIN code to gain access.]: `)).trim() || 'Enter the PIN code to gain access.'

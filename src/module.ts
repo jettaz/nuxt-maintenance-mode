@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { defineNuxtModule, addServerHandler, addPlugin, addRouteMiddleware, addImports, extendPages, createResolver, hasNuxtModule } from '@nuxt/kit'
 import { defu } from 'defu'
@@ -13,9 +13,23 @@ export interface ModuleOptions {
   message: string
   buttonText: string
   errorMessage: string
+  tooManyAttemptsMessage: string
   placeholder: string
   allowedIPs: string[]
   excludeRoutes: string[]
+  /** Read the client IP from `X-Forwarded-For`. Only enable behind a proxy that overwrites this header. */
+  trustProxy: boolean
+  /** Header with the real client IP set by your proxy, e.g. `cf-connecting-ip` or `x-nf-client-connection-ip`. */
+  ipHeader: string
+}
+
+declare module 'nuxt/schema' {
+  interface RuntimeConfig {
+    maintenanceMode: Pick<ModuleOptions, 'secret' | 'pin' | 'trustProxy' | 'ipHeader'>
+  }
+  interface PublicRuntimeConfig {
+    maintenanceMode: Pick<ModuleOptions, 'enabled' | 'route' | 'title' | 'message' | 'buttonText' | 'errorMessage' | 'tooManyAttemptsMessage' | 'placeholder' | 'allowedIPs' | 'excludeRoutes'>
+  }
 }
 
 export default defineNuxtModule<ModuleOptions>({
@@ -33,21 +47,24 @@ export default defineNuxtModule<ModuleOptions>({
     message: 'Enter the PIN code to gain access.',
     buttonText: 'Access',
     errorMessage: 'Incorrect PIN code.',
+    tooManyAttemptsMessage: 'Too many attempts. Try again in a minute.',
     placeholder: 'PIN code',
     allowedIPs: [],
     excludeRoutes: [],
+    trustProxy: false,
+    ipHeader: '',
   },
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
     const secret = options.secret || createHash('sha256').update(`maintenance:${options.pin}`).digest('hex')
 
     nuxt.options.runtimeConfig.maintenanceMode = defu(
-      nuxt.options.runtimeConfig.maintenanceMode as Record<string, unknown>,
-      { secret, pin: options.pin }
+      nuxt.options.runtimeConfig.maintenanceMode,
+      { secret, pin: options.pin, trustProxy: options.trustProxy, ipHeader: options.ipHeader }
     )
 
     nuxt.options.runtimeConfig.public.maintenanceMode = defu(
-      nuxt.options.runtimeConfig.public.maintenanceMode as Record<string, unknown>,
+      nuxt.options.runtimeConfig.public.maintenanceMode,
       {
         enabled: options.enabled,
         route: options.route,
@@ -55,6 +72,7 @@ export default defineNuxtModule<ModuleOptions>({
         message: options.message,
         buttonText: options.buttonText,
         errorMessage: options.errorMessage,
+        tooManyAttemptsMessage: options.tooManyAttemptsMessage,
         placeholder: options.placeholder,
         allowedIPs: options.allowedIPs,
         excludeRoutes: options.excludeRoutes,
@@ -105,22 +123,21 @@ export default defineNuxtModule<ModuleOptions>({
       : resolver.resolve('./runtime/pages/maintenance.vue')
 
     if (hasNuxtModule('@nuxtjs/tailwindcss')) {
-      nuxt.hook('tailwindcss:config', (config) => {
+      // Hook comes from @nuxtjs/tailwindcss and is only typed when that is installed
+      nuxt.hook('tailwindcss:config' as 'ready', ((config: { content?: unknown }) => {
         const content = Array.isArray(config.content) ? config.content : []
         content.push(resolver.resolve('./runtime/pages/maintenance.tailwind.vue'))
         config.content = content
-      })
+      }) as () => void)
     }
 
-    const routeSegment = options.route.replace(/^\//, '')
-    const userPageFile = join(nuxt.options.rootDir, 'app/pages', `${routeSegment}.vue`)
-    const pageFile = existsSync(userPageFile) ? userPageFile : defaultPageFile
-
+    // An app page on the same path (e.g. app/pages/maintenance.vue) is already registered by Nuxt.
     extendPages((pages) => {
+      if (pages.some(page => page.path === options.route)) return
       pages.push({
         name: 'maintenance-mode',
         path: options.route,
-        file: pageFile,
+        file: defaultPageFile,
       })
     })
   },

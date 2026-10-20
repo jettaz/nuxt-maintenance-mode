@@ -12,9 +12,10 @@ const title = mm.title as string
 const message = mm.message as string
 const buttonText = mm.buttonText as string
 const errorMessage = mm.errorMessage as string
+const tooManyAttemptsMessage = mm.tooManyAttemptsMessage as string
 const placeholder = mm.placeholder as string
 
-const bypassed = useState<boolean>('maintenance-bypassed', () => false)
+const { bypassed, verifyPin, unlock } = useMaintenanceMode()
 const bypassHint = useCookie('maintenance_bypass_hint')
 
 onMounted(async () => {
@@ -24,21 +25,17 @@ onMounted(async () => {
 })
 
 const pin = ref('')
-const error = ref(false)
+const error = ref('')
 const loading = ref(false)
 
 async function submit() {
-  error.value = false
+  error.value = ''
   loading.value = true
   try {
-    await $fetch('/api/_maintenance/verify', {
-      method: 'POST',
-      body: { pin: pin.value },
-    })
-    useState<boolean>('maintenance-bypassed').value = true
-    window.location.replace('/')
-  } catch {
-    error.value = true
+    if (await verifyPin(pin.value)) return unlock()
+    error.value = errorMessage
+  } catch (e) {
+    error.value = (e as { statusCode?: number }).statusCode === 429 ? tooManyAttemptsMessage : errorMessage
   } finally {
     loading.value = false
   }
@@ -64,7 +61,7 @@ async function submit() {
           autocomplete="off"
         />
 
-        <p v-if="error" class="maintenance-error">{{ errorMessage }}</p>
+        <p v-if="error" class="maintenance-error">{{ error }}</p>
 
         <button type="submit" :disabled="loading" class="maintenance-button">
           {{ loading ? '...' : buttonText }}

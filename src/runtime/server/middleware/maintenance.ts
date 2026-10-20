@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { defineEventHandler, getRequestURL, getRequestHeader, parseCookies, sendRedirect, setResponseHeader, setResponseStatus } from 'h3'
 import { useRuntimeConfig } from '#imports'
+import { isAllowedIP } from '../utils/client-ip'
 
 const DEFAULT_PUBLIC_EXCLUDED_PREFIXES = [
   '/_i18n',
@@ -18,7 +19,6 @@ export default defineEventHandler((event) => {
   const url = getRequestURL(event)
   const route = mm.route as string
   const excludeRoutes = (mm.excludeRoutes as string[]) || []
-  const allowedIPs = (mm.allowedIPs as string[]) || []
 
   if (!mm.enabled) {
     if (url.pathname === route) {
@@ -41,14 +41,7 @@ export default defineEventHandler((event) => {
     return
   }
 
-  if (allowedIPs.length > 0) {
-    const ip =
-      getRequestHeader(event, 'x-forwarded-for')?.split(',')[0]?.trim() ||
-      getRequestHeader(event, 'x-real-ip') ||
-      event.node.req.socket?.remoteAddress ||
-      ''
-    if (allowedIPs.includes(ip)) return
-  }
+  if (isAllowedIP(event)) return
 
   const cookies = parseCookies(event)
   const token = cookies.maintenance_bypass
@@ -72,7 +65,7 @@ export default defineEventHandler((event) => {
     return sendRedirect(event, route, 302)
   }
 
-  setResponseHeader(event, 'Retry-After', '60')
+  setResponseHeader(event, 'Retry-After', 60)
   setResponseStatus(event, 503)
   return {
     statusCode: 503,

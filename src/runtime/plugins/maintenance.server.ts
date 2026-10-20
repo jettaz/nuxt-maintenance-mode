@@ -1,10 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { deleteCookie, parseCookies, setCookie } from 'h3'
 import { defineNuxtPlugin, useRequestEvent, useRuntimeConfig, useState } from '#imports'
+import { isAllowedIP } from '../server/utils/client-ip'
 
 export default defineNuxtPlugin({
   name: 'maintenance-mode-server',
-  server: true,
   setup() {
     const event = useRequestEvent()
     const config = useRuntimeConfig()
@@ -21,7 +21,8 @@ export default defineNuxtPlugin({
     const encoder = new TextEncoder()
     const tokenBytes = encoder.encode(token ?? '')
     const expectedBytes = encoder.encode(expected)
-    const isValid = !!token && tokenBytes.length === expectedBytes.length && timingSafeEqual(tokenBytes, expectedBytes)
+    // An allowed IP counts as bypassed, otherwise the route middleware still redirects it.
+    const isValid = (!!token && tokenBytes.length === expectedBytes.length && timingSafeEqual(tokenBytes, expectedBytes)) || isAllowedIP(event)
 
     useState('maintenance-bypassed', () => isValid)
 

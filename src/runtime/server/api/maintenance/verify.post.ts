@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { defineEventHandler, getRequestHeader, readBody, createError, setCookie } from 'h3'
+import { defineEventHandler, readBody, createError, setCookie } from 'h3'
 import { useRuntimeConfig } from '#imports'
+import { getClientIP } from '../../utils/client-ip'
 
 const attempts = new Map<string, { count: number; resetAt: number }>()
 const MAX_ATTEMPTS = 5
@@ -8,11 +9,8 @@ const WINDOW_MS = 60_000
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const ip =
-    getRequestHeader(event, 'x-forwarded-for')?.split(',')[0]?.trim() ||
-    getRequestHeader(event, 'x-real-ip') ||
-    event.node.req.socket?.remoteAddress ||
-    'unknown'
+  // ponytail: in-memory counter per server instance; serverless instances each count separately
+  const ip = getClientIP(event)
 
   const now = Date.now()
 
